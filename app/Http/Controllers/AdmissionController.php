@@ -37,13 +37,45 @@ class AdmissionController extends Controller
             $applicant->update(['aggregate' => $finalAggregate]);
 
             // 2. Admission Decision
-            // Logic: Admit if JAMB >= Cutoff AND O-Level Points >= 15 (Average C credit)
+            // Logic: Admit if JAMB >= Cutoff AND O-Level Points >= 15
             $status = 'rejected';
             $message = "We regret to inform you that you did not meet the required criteria.";
+            $missingReq = [];
 
-            if ($applicant->jamb_score >= $cutoff && $oLevelPoints >= 15) {
+            // 2a. Check Required Subjects (New Standard)
+            if ($course && $course->required_subjects) {
+                $requirements = is_string($course->required_subjects) ? json_decode($course->required_subjects, true) : $course->required_subjects;
+                
+                // Normalizing applicant subjects to lowercase for comparison
+                $applicantSubjects = [];
+                if (is_array($applicant->olevel)) {
+                    foreach ($applicant->olevel as $k => $v) {
+                         // Handling both ['Math'=>'A1'] and [{'subject'=>'Math', 'grade'=>'A1'}]
+                         $subName = is_array($v) ? ($v['subject'] ?? '') : $k;
+                         $subGrade = is_array($v) ? ($v['grade'] ?? '') : $v;
+                         
+                         if ($subName) $applicantSubjects[strtolower(trim($subName))] = strtoupper(trim($subGrade));
+                    }
+                }
+
+                foreach ($requirements as $req) {
+                    $req = strtolower(trim($req));
+                    $grade = $applicantSubjects[$req] ?? 'F9';
+                    
+                    // Check if grade is a pass (A1-C6). F9, E8, D7 considered fail for Core Requirements.
+                    // A1=6 ... C6=1. F9=0.
+                    $points = $this->getGradePoints($grade);
+                    if ($points < 1) { // Strict check: Must have at least C6
+                        $missingReq[] = ucfirst($req);
+                    }
+                }
+            }
+
+            if ($applicant->jamb_score >= $cutoff && $oLevelPoints >= 15 && empty($missingReq)) {
                 $status = 'admitted';
                 $message = "Congratulations! You have been offered provisional admission into " . $applicant->course_applied;
+            } elseif (!empty($missingReq)) {
+                 $message = "Admission Declined. Missing Credit in required subjects: " . implode(', ', $missingReq);
             }
 
             $applicant->update(['status' => $status]);
@@ -55,28 +87,24 @@ class AdmissionController extends Controller
         return redirect('/admission/results')->with('success', "Standardized Admission Process Complete. Evaluated $processed candidates using Weighted Scoring.");
     }
 
+    private function getGradePoints($grade)
+    {
+        $grading = ['A1' => 6, 'B2' => 5, 'B3' => 4, 'C4' => 3, 'C5' => 2, 'C6' => 1];
+        return $grading[strtoupper($grade)] ?? 0;
+    }
+
     private function calculateOLevelPoints($olevel)
     {
         if (!$olevel || !is_array($olevel)) return 0;
-
-        $grading = ['A1' => 6, 'B2' => 5, 'B3' => 4, 'C4' => 3, 'C5' => 2, 'C6' => 1];
         $total = 0;
         $count = 0;
 
         foreach ($olevel as $key => $grade) {
             if ($count >= 5) break; 
 
-            // Handle case where grade is an array (e.g. ['subject'=>'Math', 'grade'=>'A1'])
-            if (is_array($grade)) {
-                $grade = $grade['grade'] ?? '';
-            }
-
-            // Handle case where key is numeric (indexed array) but value is clean string
-            if (is_numeric($key) && is_string($grade) && strlen($grade) > 2) {
-                 // Try to guess if it's formatted weirdly, but usually $grade is the value.
-            }
-
-            $total += $grading[strtoupper($grade)] ?? 0;
+            if (is_array($grade)) { $grade = $grade['grade'] ?? ''; }
+            
+            $total += $this->getGradePoints($grade);
             $count++;
         }
         return $total;

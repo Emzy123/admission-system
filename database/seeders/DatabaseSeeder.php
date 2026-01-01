@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Computer Science',
             'cutoff' => 200,
             'quota' => 2,
-            'required_subjects' => ['math', 'english', 'physics'],
+            'required_subjects' => json_encode(['mathematics', 'english', 'physics']), // Standardize lowercase
             'catchment_states' => ['Lagos', 'Ogun']
         ]);
 
@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Medicine',
             'cutoff' => 250,
             'quota' => 1,
-            'required_subjects' => ['math', 'english', 'biology', 'chemistry']
+            'required_subjects' => json_encode(['mathematics', 'english', 'biology', 'chemistry'])
         ]);
 
         // Applicants
