@@ -33,49 +33,51 @@ class AdmissionController extends Controller
 
             $finalAggregate = round($jambPoints + $weightedOLevel, 2);
 
-            // Update Aggregate
-            $applicant->update(['aggregate' => $finalAggregate]);
+            // 2b. Holistic Scoring (New)
+            $holisticBonus = 0;
+            
+            // Academic Trend
+            if ($applicant->academic_trend === 'upward') $holisticBonus += 2;
+            if ($applicant->academic_trend === 'downward') $holisticBonus -= 2;
 
-            // 2. Admission Decision
-            // Logic: Admit if JAMB >= Cutoff AND O-Level Points >= 15
-            $status = 'rejected';
-            $message = "We regret to inform you that you did not meet the required criteria.";
-            $missingReq = [];
+            // Recommendation & Hardship
+            $holisticBonus += ($applicant->recommendation_score > 7 ? 2 : 0);
+            $holisticBonus += ($applicant->hardship_bonus > 0 ? 1 : 0);
 
-            // 2a. Check Required Subjects (New Standard)
-            if ($course && $course->required_subjects) {
-                $requirements = is_string($course->required_subjects) ? json_decode($course->required_subjects, true) : $course->required_subjects;
-                
-                // Normalizing applicant subjects to lowercase for comparison
-                $applicantSubjects = [];
-                if (is_array($applicant->olevel)) {
-                    foreach ($applicant->olevel as $k => $v) {
-                         // Handling both ['Math'=>'A1'] and [{'subject'=>'Math', 'grade'=>'A1'}]
-                         $subName = is_array($v) ? ($v['subject'] ?? '') : $k;
-                         $subGrade = is_array($v) ? ($v['grade'] ?? '') : $v;
-                         
-                         if ($subName) $applicantSubjects[strtolower(trim($subName))] = strtoupper(trim($subGrade));
-                    }
-                }
-
-                foreach ($requirements as $req) {
-                    $req = strtolower(trim($req));
-                    $grade = $applicantSubjects[$req] ?? 'F9';
-                    
-                    // Check if grade is a pass (A1-C6). F9, E8, D7 considered fail for Core Requirements.
-                    // A1=6 ... C6=1. F9=0.
-                    $points = $this->getGradePoints($grade);
-                    if ($points < 1) { // Strict check: Must have at least C6
-                        $missingReq[] = ucfirst($req);
-                    }
-                }
+            // Catchment Bonus (Institutional Need)
+            if ($course && in_array($applicant->state_of_origin, $course->catchment_states ?? [])) {
+                $holisticBonus += 5; 
             }
 
-            if ($applicant->jamb_score >= $cutoff && $oLevelPoints >= 15 && empty($missingReq)) {
-                $status = 'admitted';
-                $message = "Congratulations! You have been offered provisional admission into " . $applicant->course_applied;
+            // Final Adjusted Aggregate
+            $finalScore = $finalAggregate + $holisticBonus;
+            $applicant->update(['aggregate' => $finalScore]);
+
+            // 3. Admission Decision with Waitlist Logic
+            $status = 'rejected';
+            $message = "Admission Declined. Adjusted Score: " . number_format($finalScore, 1);
+
+            // Check Discipline FIRST (Safety)
+            if ($applicant->has_disciplinary_record) {
+                $status = 'pending'; // Flag for manual review
+                $message = "Application flagged for Disciplinary Review.";
+            } 
+            elseif (empty($missingReq) && $applicant->jamb_score >= $cutoff) {
+                // Check Quota
+                $admittedCount = \App\Models\Applicant::where('course_applied', $applicant->course_applied)
+                                                    ->where('status', 'admitted')
+                                                    ->count();
+                
+                if ($admittedCount < ($course->quota ?? 100)) {
+                    $status = 'admitted';
+                    $message = "Congratulations! Provisional Admission Offered (Score: $finalScore).";
+                } else {
+                     // Waitlist Logic (Instead of hard Reject)
+                    $status = 'pending'; 
+                    $message = "Qualified but Quota Full. You have been placed on the Waitlist.";
+                }
             } elseif (!empty($missingReq)) {
-                 $message = "Admission Declined. Missing Credit in required subjects: " . implode(', ', $missingReq);
+                 $message = "Declined. Missing Credits: " . implode(', ', $missingReq);
             }
 
             $applicant->update(['status' => $status]);
@@ -83,10 +85,8 @@ class AdmissionController extends Controller
 
             $processed++;
         }
-
-            $processed++;
-        }
-
+        
+        // Remove duplicate loop finisher (bug fix)
         return response()->json([
             'message' => "Standardized Admission Process Complete.",
             'processed' => $processed,
