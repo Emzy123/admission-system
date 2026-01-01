@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('state_of_origin')->nullable();
             $table->string('course_applied')->nullable();
             $table->decimal('aggregate', 5, 2)->nullable();
-            $table->enum('status', ['pending', 'admitted', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'admitted', 'rejected', 'waitlisted', 'under_review'])->default('pending');
             $table->boolean('is_submitted')->default(false);
             $table->timestamps();
         });
