@@ -202,6 +202,13 @@ Route::middleware('guest:applicant')->group(function () {
 });
 
 // Authenticated Applicant Routes
+Route::middleware('auth:applicant')->group(function () {
+    Route::get('/portal/dashboard', [PortalController::class, 'dashboard'])->name('portal.dashboard');
+    Route::get('/portal/apply', [PortalController::class, 'showApplyForm'])->name('portal.apply');
+    Route::post('/portal/apply', [PortalController::class, 'submitApplication']);
+    Route::post('/portal/logout', [PortalController::class, 'logout'])->name('portal.logout');
+});
+
 // --- SYSTEM SETUP ROUTE (REMOVE AFTER USE) ---
 Route::get('/system/setup-db', function () {
     try {
