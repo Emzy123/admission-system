@@ -19,15 +19,84 @@
                 <h5 class="mb-0"><i class="fas fa-file-csv me-2 text-success"></i> Bulk Upload (JAMB Export)</h5>
             </div>
             <div class="card-body">
-                <form action="{{ url('/admin/applicants/csv') }}" method="POST" enctype="multipart/form-data">
+                <form id="csvUploadForm" onsubmit="uploadCSV(event)">
                     @csrf
                     <div class="mb-3">
                         <label class="form-label">Select CSV File</label>
-                        <input type="file" name="csv_file" class="form-control" required>
+                        <input type="file" name="csv_file" id="csvFile" class="form-control" required accept=".csv,.xlsx">
                         <div class="form-text">Supported formats: .csv, .xlsx</div>
                     </div>
-                    <button type="submit" class="btn btn-success w-100"><i class="fas fa-upload me-2"></i> Upload Applicants</button>
+                    
+                    <!-- Progress Bar Container (Hidden by default) -->
+                    <div id="progressContainer" class="mb-3 d-none">
+                        <div class="progress" style="height: 25px;">
+                            <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <small id="progressText" class="text-muted d-block mt-1">Starting upload...</small>
+                    </div>
+
+                    <button type="submit" id="uploadBtn" class="btn btn-success w-100"><i class="fas fa-upload me-2"></i> Upload Applicants</button>
                 </form>
+
+                <script>
+                    function uploadCSV(e) {
+                        e.preventDefault();
+                        
+                        const fileInput = document.getElementById('csvFile');
+                        const file = fileInput.files[0];
+                        if (!file) return;
+
+                        const formData = new FormData();
+                        formData.append('csv_file', file);
+                        formData.append('_token', '{{ csrf_token() }}');
+
+                        const xhr = new XMLHttpRequest();
+                        const progressBar = document.getElementById('uploadProgressBar');
+                        const progressContainer = document.getElementById('progressContainer');
+                        const progressText = document.getElementById('progressText');
+                        const btn = document.getElementById('uploadBtn');
+
+                        // UI Reset
+                        progressContainer.classList.remove('d-none');
+                        btn.disabled = true;
+                        progressBar.style.width = '0%';
+                        progressBar.innerText = '0%';
+                        progressBar.classList.remove('bg-danger');
+                        progressBar.classList.add('bg-success');
+
+                        // Upload Progress
+                        xhr.upload.onprogress = function(event) {
+                            if (event.lengthComputable) {
+                                const percent = Math.round((event.loaded / event.total) * 100);
+                                progressBar.style.width = percent + '%';
+                                progressBar.innerText = percent + '%';
+                                progressText.innerText = 'Uploading... ' + percent + '%';
+                            }
+                        };
+
+                        // State Change
+                        xhr.onreadystatechange = function() {
+                            if (xhr.readyState === 4) {
+                                btn.disabled = false;
+                                if (xhr.status === 200) {
+                                    progressBar.style.width = '100%';
+                                    progressBar.innerText = 'Complete';
+                                    progressText.innerHTML = '<span class="text-success fw-bold">Success! Reloading...</span>';
+                                    setTimeout(() => window.location.reload(), 1500);
+                                } else {
+                                    progressBar.classList.remove('bg-success');
+                                    progressBar.classList.add('bg-danger');
+                                    progressBar.innerText = 'Error';
+                                    progressText.innerText = 'Upload Failed: ' + (xhr.responseText || 'Server Error');
+                                    console.error(xhr.responseText);
+                                }
+                            }
+                        };
+
+                        xhr.open('POST', '{{ url("/admin/applicants/csv") }}', true);
+                        xhr.send(formData);
+                    }
+                </script>
             </div>
         </div>
     </div>

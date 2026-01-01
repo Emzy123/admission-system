@@ -73,6 +73,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::post('/admin/applicants/csv', function (\Illuminate\Http\Request $request) {
+        set_time_limit(300); // Increase timeout to 5 minutes
+
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt,xlsx'
         ]);
