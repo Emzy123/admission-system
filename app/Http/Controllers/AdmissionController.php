@@ -71,4 +71,3 @@ class AdmissionController extends Controller
         return $total;
     }
 }
-}
