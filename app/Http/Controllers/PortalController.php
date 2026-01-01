@@ -87,15 +87,26 @@ class PortalController extends Controller
             'olevel' => 'required|array|min:5',
         ]);
 
+        // Process O-Level Array from keys/values to ['Math' => 'A1']
+        $processedOlevel = [];
+        if (isset($validated['olevel']) && is_array($validated['olevel'])) {
+            foreach ($validated['olevel'] as $item) {
+                if (!empty($item['subject']) && !empty($item['grade'])) {
+                    $processedOlevel[$item['subject']] = $item['grade'];
+                }
+            }
+        }
+
         // Simple Aggregate Calc (Mock logic: JAMB/8 + count(Olevel)*4) - simplified
-        $aggregate = ($validated['jamb_score'] / 8) + 30; // Base score
+        // We will let the Admin "Run Admission" recalculate this properly later.
+        $aggregate = ($validated['jamb_score'] / 8) + 30; 
 
         $applicant->update([
             'jamb_reg_no' => $validated['jamb_reg_no'],
             'jamb_score' => $validated['jamb_score'],
             'state_of_origin' => $validated['state_of_origin'],
-            'course_applied' => $validated['course_applied'], // Name string for now to match backend
-            'olevel' => $validated['olevel'],
+            'course_applied' => $validated['course_applied'], 
+            'olevel' => $processedOlevel,
             'aggregate' => $aggregate,
             'is_submitted' => true,
             'status' => 'pending'

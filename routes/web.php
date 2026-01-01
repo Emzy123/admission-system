@@ -121,9 +121,9 @@ Route::middleware('auth')->group(function () {
              }
 
              Applicant::updateOrCreate(
-                ['email' => $row[2]], 
+                ['jamb_reg_no' => $row[0]], // Lookup by Unique RegNo instead of Email
                 [
-                    'jamb_reg_no' => $row[0],
+                    'email' => $row[2], 
                     'full_name' => $row[1],
                     'password' => \Illuminate\Support\Facades\Hash::make('password'),
                     'jamb_score' => $score,
