@@ -70,12 +70,30 @@ Route::middleware('auth')->group(function () {
         $handle = fopen($file->getPathname(), 'r');
         fgetcsv($handle); // Skip header
 
+        $countProcessed = 0;
+        $countSkipped = 0;
+        $countInserted = 0;
+
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+             $countProcessed++;
+             // Log first 3 rows to debug structure
+             if ($countProcessed <= 3) {
+                 \Illuminate\Support\Facades\Log::info("Row {$countProcessed}: " . json_encode($row));
+             }
+
              // Expecting: RegNo, Name, Email, Score, Course, State
-             if(count($row) < 6) continue;
+             if(count($row) < 6) {
+                 \Illuminate\Support\Facades\Log::warning("Skipped Row {$countProcessed}: Not enough columns (" . count($row) . ")");
+                 $countSkipped++;
+                 continue;
+             }
 
              $score = is_numeric($row[3]) ? intval($row[3]) : 0;
-             if ($score === 0) continue; // Skip invalid scores or headers
+             if ($score === 0) {
+                 \Illuminate\Support\Facades\Log::warning("Skipped Row {$countProcessed}: Invalid Score '{$row[3]}'");
+                 $countSkipped++;
+                 continue;
+             }
 
              Applicant::updateOrCreate(
                 ['email' => $row[2]], 
@@ -91,10 +109,13 @@ Route::middleware('auth')->group(function () {
                     'aggregate' => $score / 4
                 ]
              );
+             $countInserted++;
         }
         fclose($handle);
 
-        return back()->with('success', 'Bulk upload processed successfully.');
+        \Illuminate\Support\Facades\Log::info("CSV Processing Complete. Processed: $countProcessed, Inserted: $countInserted, Skipped: $countSkipped");
+
+        return back()->with('success', "Bulk upload processed. Inserted: $countInserted, Skipped: $countSkipped. Check logs for details.");
     });
 
     // Admission Rules (Admin)
