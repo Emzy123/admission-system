@@ -1,0 +1,53 @@
+services:
+  # The Web Service (Laravel App)
+  - type: web
+    name: university-portal
+    env: docker
+    plan: free
+    region: oregon 
+    buildCommand: null # Uses Dockerfile
+    startCommand: null # Uses Dockerfile
+    envVars:
+      - key: APP_NAME
+        value: University Portal
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: true
+      - key: APP_KEY
+        sync: false # User must provide this manually on dashboard for security, or we hardcode a placeholder
+      - key: APP_URL
+        fromService:
+          type: web
+          name: university-portal
+          property: url
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        fromDatabase:
+         name: admission-db
+         property: host
+      - key: DB_PORT
+        value: 5432
+      - key: DB_DATABASE
+        fromDatabase:
+          name: admission-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: admission-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: admission-db
+          property: password
+
+databases:
+  # The Database Service
+  - name: admission-db
+    plan: free
+    region: oregon
+    databaseName: admission_system
+    user: admission_user
+
+version: "1"
