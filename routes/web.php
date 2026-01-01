@@ -193,3 +193,18 @@ Route::get('/system/clear-cache', function () {
     \Illuminate\Support\Facades\Artisan::call('optimize:clear');
     return "Cache cleared successfully! <a href='/portal/apply'>Try Apply URL</a>";
 });
+
+Route::get('/system/fix-admin', function () {
+    try {
+        $user = \App\Models\User::updateOrCreate(
+            ['email' => 'emmanuelocheme86@gmail.com'],
+            [
+                'name' => 'University Admin',
+                'password' => \Illuminate\Support\Facades\Hash::make('Admin@universityportal') // Force hash
+            ]
+        );
+        return "Admin User Fixed!<br>Email: emmanuelocheme86@gmail.com<br>Password: Admin@universityportal<br><br><a href='/admin/login'>Login Now</a>";
+    } catch (\Exception $e) {
+        return "Error fixing admin: " . $e->getMessage();
+    }
+});
