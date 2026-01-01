@@ -38,6 +38,10 @@ services:
         fromDatabase:
           name: admission-db
           property: password
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_STORE
+        value: file
 
 databases:
   # The Database Service
