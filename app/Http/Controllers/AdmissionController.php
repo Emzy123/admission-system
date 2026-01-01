@@ -63,8 +63,19 @@ class AdmissionController extends Controller
         $total = 0;
         $count = 0;
 
-        foreach ($olevel as $grade) {
-            if ($count >= 5) break; // Top 5 subjects
+        foreach ($olevel as $key => $grade) {
+            if ($count >= 5) break; 
+
+            // Handle case where grade is an array (e.g. ['subject'=>'Math', 'grade'=>'A1'])
+            if (is_array($grade)) {
+                $grade = $grade['grade'] ?? '';
+            }
+
+            // Handle case where key is numeric (indexed array) but value is clean string
+            if (is_numeric($key) && is_string($grade) && strlen($grade) > 2) {
+                 // Try to guess if it's formatted weirdly, but usually $grade is the value.
+            }
+
             $total += $grading[strtoupper($grade)] ?? 0;
             $count++;
         }
