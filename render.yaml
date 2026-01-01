@@ -17,10 +17,7 @@ services:
       - key: APP_KEY
         sync: false # User must provide this manually on dashboard for security, or we hardcode a placeholder
       - key: APP_URL
-        fromService:
-          type: web
-          name: university-portal
-          property: url
+        value: https://university-portal.onrender.com # You will update this after deployment
       - key: DB_CONNECTION
         value: pgsql
       - key: DB_HOST
