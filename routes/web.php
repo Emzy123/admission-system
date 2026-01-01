@@ -161,12 +161,16 @@ Route::middleware('auth')->group(function () {
         return view('admission.process', compact('pending'));
     });
     Route::post('/admission/run', [AdmissionController::class, 'runAdmission']);
+    Route::post('/admission/manual/admit/{id}', [AdmissionController::class, 'manualAdmit']);
+    Route::post('/admission/manual/reject/{id}', [AdmissionController::class, 'manualReject']);
 
     // Admission Results (Admin)
     Route::get('/admission/results', function () {
         $admitted = Applicant::where('status', 'admitted')->get();
         $rejected = Applicant::where('status', 'rejected')->get();
-        return view('admission.results', compact('admitted', 'rejected'));
+        $reviews = Applicant::whereIn('status', ['waitlisted', 'under_review'])->get();
+        
+        return view('admission.results', compact('admitted', 'rejected', 'reviews'));
     });
 
     // JAMB Confirmation (Admin)

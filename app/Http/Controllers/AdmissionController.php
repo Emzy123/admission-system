@@ -59,8 +59,8 @@ class AdmissionController extends Controller
 
             // Check Discipline FIRST (Safety)
             if ($applicant->has_disciplinary_record) {
-                $status = 'pending'; // Flag for manual review
-                $message = "Application flagged for Disciplinary Review.";
+                $status = 'under_review'; // Flag for manual review
+                $message = "Application flagged for Disciplinary Review. Action Required.";
             } 
             elseif (empty($missingReq) && $applicant->jamb_score >= $cutoff) {
                 // Check Quota
@@ -72,8 +72,8 @@ class AdmissionController extends Controller
                     $status = 'admitted';
                     $message = "Congratulations! Provisional Admission Offered (Score: $finalScore).";
                 } else {
-                     // Waitlist Logic (Instead of hard Reject)
-                    $status = 'pending'; 
+                     // Waitlist Logic
+                    $status = 'waitlisted'; 
                     $message = "Qualified but Quota Full. You have been placed on the Waitlist.";
                 }
             } elseif (!empty($missingReq)) {
@@ -92,6 +92,27 @@ class AdmissionController extends Controller
             'processed' => $processed,
             'success' => true
         ], 200);
+    }
+
+    public function manualAdmit($id)
+    {
+        $applicant = Applicant::findOrFail($id);
+        $applicant->update([
+            'status' => 'admitted',
+            'created_at' => now(), // Refresh timestamp to show at top? Optional.
+        ]);
+        $applicant->notify(new \App\Notifications\AdmissionDecision('admitted', "Congratulations! Your admission has been manually approved by the administration."));
+        
+        return back()->with('success', "Applicant {$applicant->full_name} has been manually Admitted.");
+    }
+
+    public function manualReject($id)
+    {
+        $applicant = Applicant::findOrFail($id);
+        $applicant->update(['status' => 'rejected']);
+        $applicant->notify(new \App\Notifications\AdmissionDecision('rejected', "Admission Declined regarding your review."));
+        
+        return back()->with('success', "Applicant {$applicant->full_name} has been Rejected.");
     }
 
     private function getGradePoints($grade)
