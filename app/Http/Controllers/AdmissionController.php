@@ -56,6 +56,31 @@ class AdmissionController extends Controller
             // 3. Admission Decision with Waitlist Logic
             $status = 'rejected';
             $message = "Admission Declined. Adjusted Score: " . number_format($finalScore, 1);
+            $missingReq = []; // Initialize array
+
+            // 2c. Check Required Subjects (Subject Verification)
+            if ($course && $course->required_subjects) {
+                $requirements = is_string($course->required_subjects) ? json_decode($course->required_subjects, true) : $course->required_subjects;
+                
+                // Normalizing applicant subjects to lowercase for comparison
+                $applicantSubjects = [];
+                if (is_array($applicant->olevel)) {
+                    foreach ($applicant->olevel as $k => $v) {
+                         $subName = is_array($v) ? ($v['subject'] ?? '') : $k;
+                         $subGrade = is_array($v) ? ($v['grade'] ?? '') : $v;
+                         if ($subName) $applicantSubjects[strtolower(trim($subName))] = strtoupper(trim($subGrade));
+                    }
+                }
+
+                foreach ($requirements as $req) {
+                    $req = strtolower(trim($req));
+                    $grade = $applicantSubjects[$req] ?? 'F9';
+                    $points = $this->getGradePoints($grade);
+                    if ($points < 1) { // Strict check: Must have at least C6
+                        $missingReq[] = ucfirst($req);
+                    }
+                }
+            }
 
             // Check Discipline FIRST (Safety)
             if ($applicant->has_disciplinary_record) {

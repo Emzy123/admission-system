@@ -21,13 +21,5 @@ return new class extends Migration
         \Illuminate\Support\Facades\DB::statement("ALTER TABLE applicants MODIFY COLUMN status ENUM('pending', 'admitted', 'rejected') DEFAULT 'pending'");
     }
 
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        Schema::table('applicants', function (Blueprint $table) {
-            //
-        });
-    }
+
 };
