@@ -142,8 +142,12 @@ Route::middleware('auth')->group(function () {
         fclose($handle);
 
         \Illuminate\Support\Facades\Log::info("CSV Processing Complete. Processed: $countProcessed, Inserted: $countInserted, Skipped: $countSkipped");
-
-        return back()->with('success', "Bulk upload processed. Inserted: $countInserted (with O-Levels).");
+        
+        return response()->json([
+            'message' => "Bulk upload processed successfully.",
+            'inserted' => $countInserted,
+            'skipped' => $countSkipped
+        ], 200);
     });
 
     // Admission Rules (Admin)

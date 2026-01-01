@@ -8,8 +8,13 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     && docker-php-ext-install pdo pdo_mysql pdo_pgsql zip
 
-# 2. Enable Apache mod_rewrite for Laravel
+# 2. Enable Apache mod_rewrite
 RUN a2enmod rewrite
+
+# 2b. Start: Increase PHP Upload Limits
+RUN echo "upload_max_filesize = 50M;" > /usr/local/etc/php/conf.d/uploads.ini
+RUN echo "post_max_size = 50M;" >> /usr/local/etc/php/conf.d/uploads.ini
+# End: Increase PHP Upload Limits
 
 # 3. Set working directory
 WORKDIR /var/www/html

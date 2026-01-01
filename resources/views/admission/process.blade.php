@@ -9,13 +9,48 @@
                 <p class="text-muted mb-0">Review pending applicants before processing.</p>
             </div>
             
-            <form action="{{ url('/admission/run') }}" method="POST">
-                @csrf
-                <button type="submit" class="btn btn-primary btn-lg shadow" onclick="return confirm('Are you sure you want to run the admission rules? This will update statuses for all pending applicants.')">
+            <div>
+                <button type="button" id="processBtn" class="btn btn-primary btn-lg shadow" onclick="runAdmission()">
                     <i class="fas fa-cogs me-2"></i> Process ALL Admission Rules
                 </button>
-            </form>
+                <div id="processSpinner" class="d-none text-end mt-2">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <span class="ms-2 text-primary fw-bold">Processing... Please Wait...</span>
+                </div>
+            </div>
         </div>
+
+        <script>
+            function runAdmission() {
+                if(!confirm('Are you sure? This will update admission status for all pending applicants.')) return;
+
+                const btn = document.getElementById('processBtn');
+                const spinner = document.getElementById('processSpinner');
+                
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spin fa-spinner me-2"></i> Processing...';
+                spinner.classList.remove('d-none');
+
+                fetch('{{ url("/admission/run") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message + "\nEvaluated: " + data.processed);
+                    window.location.href = '{{ url("/admission/results") }}';
+                })
+                .catch(error => {
+                    alert("Error: " + error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Retry';
+                    spinner.classList.add('d-none');
+                });
+            }
+        </script>
 
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3">

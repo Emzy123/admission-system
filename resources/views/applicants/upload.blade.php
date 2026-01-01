@@ -79,10 +79,28 @@
                             if (xhr.readyState === 4) {
                                 btn.disabled = false;
                                 if (xhr.status === 200) {
-                                    progressBar.style.width = '100%';
-                                    progressBar.innerText = 'Complete';
-                                    progressText.innerHTML = '<span class="text-success fw-bold">Success! Reloading...</span>';
-                                    setTimeout(() => window.location.reload(), 1500);
+                                    try {
+                                        const response = JSON.parse(xhr.responseText);
+                                        progressBar.style.width = '100%';
+                                        progressBar.innerText = 'Complete';
+                                        
+                                        // Show detailed success message
+                                        progressText.innerHTML = `
+                                            <div class="alert alert-success mt-2">
+                                                <strong><i class="fas fa-check-circle"></i> Success!</strong><br>
+                                                ${response.message}<br>
+                                                <small>Inserted: ${response.inserted} | Skipped: ${response.skipped}</small>
+                                            </div>
+                                            <div class="text-center text-muted">Reloading page...</div>
+                                        `;
+                                        
+                                        setTimeout(() => window.location.reload(), 3000);
+                                    } catch (e) {
+                                        // Fallback if not JSON
+                                        progressBar.innerText = 'Done';
+                                        progressText.innerText = 'Upload Completed. Reloading...';
+                                        setTimeout(() => window.location.reload(), 1000);
+                                    }
                                 } else {
                                     progressBar.classList.remove('bg-success');
                                     progressBar.classList.add('bg-danger');

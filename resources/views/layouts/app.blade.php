@@ -71,14 +71,39 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             margin-bottom: 20px;
         }
-        .btn-primary {
-            background-color: #3498db;
-            border-color: #3498db;
-        }
         .btn-success {
             background-color: #27ae60;
             border-color: #27ae60;
         }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+                margin-bottom: 20px;
+                padding-bottom: 20px;
+                display: none; /* Collapsed by default */
+            }
+            .sidebar.show {
+                display: block;
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 10px;
+            }
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .mobile-toggle {
+                display: block !important;
+                margin-bottom: 10px;
+            }
+        }
+        .mobile-toggle { display: none; }
     </style>
 </head>
 <body>
@@ -115,6 +140,9 @@
     <div class="main-content">
         <!-- Top Header -->
         <div class="header">
+            <button class="btn btn-outline-dark mobile-toggle" onclick="document.querySelector('.sidebar').classList.toggle('show')">
+                <i class="fas fa-bars"></i> Menu
+            </button>
             <div class="system-name">
                  Automated Admission Decision System
             </div>

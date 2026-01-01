@@ -84,7 +84,14 @@ class AdmissionController extends Controller
             $processed++;
         }
 
-        return redirect('/admission/results')->with('success', "Standardized Admission Process Complete. Evaluated $processed candidates using Weighted Scoring.");
+            $processed++;
+        }
+
+        return response()->json([
+            'message' => "Standardized Admission Process Complete.",
+            'processed' => $processed,
+            'success' => true
+        ], 200);
     }
 
     private function getGradePoints($grade)
