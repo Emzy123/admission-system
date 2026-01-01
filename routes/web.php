@@ -179,9 +179,12 @@ Route::middleware('guest:applicant')->group(function () {
 });
 
 // Authenticated Applicant Routes
-Route::middleware('auth:applicant')->prefix('portal')->group(function () {
-    Route::post('/logout', [PortalController::class, 'logout']);
-    Route::get('/dashboard', [PortalController::class, 'dashboard']);
-    Route::get('/apply', [PortalController::class, 'showApplyForm']);
-    Route::post('/apply', [PortalController::class, 'submitApplication']);
+// --- SYSTEM SETUP ROUTE (REMOVE AFTER USE) ---
+Route::get('/system/setup-db', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate:fresh --seed --force');
+        return "Database setup completed successfully! Tables created and Admin seeded. <a href='/admin/login'>Go to Admin Login</a>";
+    } catch (\Exception $e) {
+        return "Setup Failed: " . $e->getMessage();
+    }
 });
