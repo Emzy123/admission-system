@@ -45,6 +45,16 @@ Route::middleware('auth')->group(function () {
             'state' => 'required'
         ]);
 
+        // Process O-Level Array
+        $olevel = [];
+        if ($request->has('olevel')) {
+            foreach ($request->olevel as $item) {
+                if (!empty($item['subject']) && !empty($item['grade'])) {
+                    $olevel[$item['subject']] = $item['grade'];
+                }
+            }
+        }
+
         Applicant::create([
             'jamb_reg_no' => $request->jamb_reg_no,
             'full_name' => $request->full_name,
@@ -55,10 +65,11 @@ Route::middleware('auth')->group(function () {
             'state_of_origin' => $request->state,
             'status' => 'pending',
             'is_submitted' => true,
-            'aggregate' => $request->jamb_score / 4 // Simplified aggregate
+            'olevel' => $olevel, // Store as JSON (casted in model)
+            'aggregate' => 0 // Will be calculated by Admission Run
         ]);
 
-        return back()->with('success', 'Applicant added successfully.');
+        return back()->with('success', 'Applicant added with O-Level results.');
     });
 
     Route::post('/admin/applicants/csv', function (\Illuminate\Http\Request $request) {
@@ -81,7 +92,8 @@ Route::middleware('auth')->group(function () {
                  \Illuminate\Support\Facades\Log::info("Row {$countProcessed}: " . json_encode($row));
              }
 
-             // Expecting: RegNo, Name, Email, Score, Course, State
+             // Expecting: RegNo, Name, Email, Score, Course, State, Sub1, Gr1, Sub2, Gr2, Sub3, Gr3, Sub4, Gr4, Sub5, Gr5
+             // Minimum 6 columns required, but 16 recommended for full O-Level
              if(count($row) < 6) {
                  \Illuminate\Support\Facades\Log::warning("Skipped Row {$countProcessed}: Not enough columns (" . count($row) . ")");
                  $countSkipped++;
@@ -95,6 +107,19 @@ Route::middleware('auth')->group(function () {
                  continue;
              }
 
+             // Parse O-Levels from columns 6-15 if they exist
+             $olevel = [];
+             // Pairs start at index 6: 6=>Sub1, 7=>Gr1, 8=>Sub2, 9=>Gr2 ... 14=>Sub5, 15=>Gr5
+             for ($i = 6; $i < 16; $i += 2) {
+                 if (isset($row[$i]) && isset($row[$i+1])) {
+                     $sub = trim($row[$i]);
+                     $gr = trim($row[$i+1]);
+                     if (!empty($sub) && !empty($gr)) {
+                         $olevel[$sub] = $gr;
+                     }
+                 }
+             }
+
              Applicant::updateOrCreate(
                 ['email' => $row[2]], 
                 [
@@ -106,7 +131,8 @@ Route::middleware('auth')->group(function () {
                     'state_of_origin' => $row[5],
                     'status' => 'pending',
                     'is_submitted' => true,
-                    'aggregate' => $score / 4
+                    'olevel' => $olevel,
+                    'aggregate' => 0 // Calculated later
                 ]
              );
              $countInserted++;
@@ -115,7 +141,7 @@ Route::middleware('auth')->group(function () {
 
         \Illuminate\Support\Facades\Log::info("CSV Processing Complete. Processed: $countProcessed, Inserted: $countInserted, Skipped: $countSkipped");
 
-        return back()->with('success', "Bulk upload processed. Inserted: $countInserted, Skipped: $countSkipped. Check logs for details.");
+        return back()->with('success', "Bulk upload processed. Inserted: $countInserted (with O-Levels).");
     });
 
     // Admission Rules (Admin)
@@ -128,34 +154,7 @@ Route::middleware('auth')->group(function () {
         $pending = Applicant::where('status', 'pending')->where('is_submitted', true)->get();
         return view('admission.process', compact('pending'));
     });
-    Route::post('/admission/run', function () {
-        $pending = Applicant::where('status', 'pending')->where('is_submitted', true)->get();
-        $courses = Course::all()->keyBy('name');
-
-        $processed = 0;
-        foreach($pending as $applicant) {
-            $course = $courses->get($applicant->course_applied);
-            
-            // Default logic: Admit if JAMB score >= Course Cutoff
-            // Fallback: If course not found in DB, assume cutoff 180
-            $cutoff = $course ? $course->cutoff : 180; 
-
-            $status = 'rejected';
-            $message = "We regret to inform you that you have not been offered admission due to not meeting the cutoff criteria.";
-
-            if ($applicant->jamb_score >= $cutoff) {
-                $status = 'admitted';
-                $message = "Congratulations! You have been offered provisional admission into " . $applicant->course_applied;
-            }
-            
-            $applicant->update(['status' => $status]);
-            $applicant->notify(new \App\Notifications\AdmissionDecision($status, $message));
-
-            $processed++;
-        }
-        
-        return redirect('/admission/results')->with('success', "Admission process completed. $processed applicants evaluated.");
-    });
+    Route::post('/admission/run', [AdmissionController::class, 'runAdmission']);
 
     // Admission Results (Admin)
     Route::get('/admission/results', function () {

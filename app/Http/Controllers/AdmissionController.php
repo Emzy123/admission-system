@@ -12,48 +12,63 @@ use Illuminate\Http\Request;
 
 class AdmissionController extends Controller
 {
-    public function index()
+    public function runAdmission()
     {
-        $courses = Course::all();
-        $results = AdmissionResult::with(['applicant', 'course'])->latest()->paginate(20);
-        return view('admission.index', compact('courses', 'results'));
-    }
-
-    public function generate($courseId)
-    {
-        $course = Course::findOrFail($courseId);
+        $pending = Applicant::where('status', 'pending')->where('is_submitted', true)->get();
+        $courses = Course::all()->keyBy('name');
         
-        // Ensure no previous results for this course to avoid duplicates if re-running (optional logic)
-        // AdmissionResult::where('course_id', $course->id)->delete(); 
+        $processed = 0;
+        foreach($pending as $applicant) {
+            $course = $courses->get($applicant->course_applied);
+            $cutoff = $course ? $course->cutoff : 180;
 
-        $applicants = Applicant::where('course_applied', $course->name)
-                               ->where('status', 'pending') // Only process pending
-                               ->get();
+            // 1. Calculate Standardized Aggregate
+            // JAMB (60%): (Score / 400) * 60
+            $jambPoints = ($applicant->jamb_score / 400) * 60;
 
-        $rule = new RuleEngine();
-        $ranking = new RankingEngine();
-        $quota = new QuotaEngine();
+            // O-Level (40%): A1=6, B2=5, B3=4, C4=3, C5=2, C6=1. Max 30 points (5 subjects).
+            // Calculation: (Points / 30) * 40
+            $oLevelPoints = $this->calculateOLevelPoints($applicant->olevel);
+            $weightedOLevel = ($oLevelPoints / 30) * 40;
 
-        // 1. Qualify
-        $qualified = $applicants->filter(fn($a) => $rule->qualifies($a, $course));
+            $finalAggregate = round($jambPoints + $weightedOLevel, 2);
 
-        // 2. Rank
-        $ranked = $ranking->rank($qualified);
+            // Update Aggregate
+            $applicant->update(['aggregate' => $finalAggregate]);
 
-        // 3. Apply Quota
-        $admitted = $quota->apply($ranked, $course->quota);
+            // 2. Admission Decision
+            // Logic: Admit if JAMB >= Cutoff AND O-Level Points >= 15 (Average C credit)
+            $status = 'rejected';
+            $message = "We regret to inform you that you did not meet the required criteria.";
 
-        foreach ($admitted as $applicant) {
-            AdmissionResult::create([
-                'applicant_id' => $applicant->id,
-                'course_id' => $course->id,
-                'decision' => 'admitted',
-                'jamb_status' => 'pending'
-            ]);
+            if ($applicant->jamb_score >= $cutoff && $oLevelPoints >= 15) {
+                $status = 'admitted';
+                $message = "Congratulations! You have been offered provisional admission into " . $applicant->course_applied;
+            }
 
-            $applicant->update(['status' => 'admitted']);
+            $applicant->update(['status' => $status]);
+            $applicant->notify(new \App\Notifications\AdmissionDecision($status, $message));
+
+            $processed++;
         }
 
-        return back()->with('success', 'Admission list generated successfully. ' . $admitted->count() . ' candidates admitted.');
+        return redirect('/admission/results')->with('success', "Standardized Admission Process Complete. Evaluated $processed candidates using Weighted Scoring.");
     }
+
+    private function calculateOLevelPoints($olevel)
+    {
+        if (!$olevel || !is_array($olevel)) return 0;
+
+        $grading = ['A1' => 6, 'B2' => 5, 'B3' => 4, 'C4' => 3, 'C5' => 2, 'C6' => 1];
+        $total = 0;
+        $count = 0;
+
+        foreach ($olevel as $grade) {
+            if ($count >= 5) break; // Top 5 subjects
+            $total += $grading[strtoupper($grade)] ?? 0;
+            $count++;
+        }
+        return $total;
+    }
+}
 }

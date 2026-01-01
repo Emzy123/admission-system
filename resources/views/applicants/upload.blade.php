@@ -78,7 +78,45 @@
                                 <option value="Lagos">Lagos</option>
                                 <option value="Abuja">Abuja</option>
                                 <option value="Enugu">Enugu</option>
+                                <option value="Kano">Kano</option>
                             </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">O-Level Results (5 Subjects)</label>
+                        <div class="bg-light p-3 rounded">
+                            @for($i=0; $i<5; $i++)
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <select name="olevel[{{$i}}][subject]" class="form-select form-select-sm" required>
+                                        <option value="" disabled selected>Select Subject</option>
+                                        <option value="Mathematics">Mathematics</option>
+                                        <option value="English">English</option>
+                                        <option value="Physics">Physics</option>
+                                        <option value="Chemistry">Chemistry</option>
+                                        <option value="Biology">Biology</option>
+                                        <option value="Economics">Economics</option>
+                                        <option value="Government">Government</option>
+                                        <option value="Literature">Literature</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <select name="olevel[{{$i}}][grade]" class="form-select form-select-sm" required>
+                                        <option value="" disabled selected>Grade</option>
+                                        <option value="A1">A1 (Excellent)</option>
+                                        <option value="B2">B2 (Very Good)</option>
+                                        <option value="B3">B3 (Good)</option>
+                                        <option value="C4">C4 (Credit)</option>
+                                        <option value="C5">C5 (Credit)</option>
+                                        <option value="C6">C6 (Credit)</option>
+                                        <option value="D7">D7 (Pass)</option>
+                                        <option value="E8">E8 (Pass)</option>
+                                        <option value="F9">F9 (Fail)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            @endfor
                         </div>
                     </div>
                     
