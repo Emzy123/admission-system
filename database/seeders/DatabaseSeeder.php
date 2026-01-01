@@ -82,10 +82,10 @@ class DatabaseSeeder extends Seeder
             'status' => 'pending'
         ]);
         // Admin
-        \App\Models\User::factory()->create([
+        \App\Models\User::create([
             'name' => 'University Admin',
             'email' => 'emmanuelocheme86@gmail.com',
-            'password' => bcrypt('Admin@universityportal'),
+            'password' => \Illuminate\Support\Facades\Hash::make('Admin@universityportal'),
         ]);
     }
 }
