@@ -74,18 +74,21 @@ Route::middleware('auth')->group(function () {
              // Expecting: RegNo, Name, Email, Score, Course, State
              if(count($row) < 6) continue;
 
+             $score = is_numeric($row[3]) ? intval($row[3]) : 0;
+             if ($score === 0) continue; // Skip invalid scores or headers
+
              Applicant::updateOrCreate(
                 ['email' => $row[2]], 
                 [
                     'jamb_reg_no' => $row[0],
                     'full_name' => $row[1],
                     'password' => \Illuminate\Support\Facades\Hash::make('password'),
-                    'jamb_score' => $row[3],
+                    'jamb_score' => $score,
                     'course_applied' => $row[4],
                     'state_of_origin' => $row[5],
                     'status' => 'pending',
                     'is_submitted' => true,
-                    'aggregate' => $row[3] / 4
+                    'aggregate' => $score / 4
                 ]
              );
         }
