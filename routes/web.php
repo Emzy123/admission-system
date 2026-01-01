@@ -188,3 +188,8 @@ Route::get('/system/setup-db', function () {
         return "Setup Failed: " . $e->getMessage();
     }
 });
+
+Route::get('/system/clear-cache', function () {
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+    return "Cache cleared successfully! <a href='/portal/apply'>Try Apply URL</a>";
+});
