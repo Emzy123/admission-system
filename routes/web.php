@@ -88,6 +88,7 @@ Route::middleware('auth')->group(function () {
         $countProcessed = 0;
         $countSkipped = 0;
         $countInserted = 0;
+        $errors = [];
 
         // Skip Header explicitly if not empty
         // fgetcsv($handle); // Optional: we can check row content inside loop
@@ -151,21 +152,26 @@ Route::middleware('auth')->group(function () {
                  );
                  $countInserted++;
              } catch (\Exception $e) {
-                 return response()->json([
-                     'message' => "Error on Row " . $countProcessed . ": " . $e->getMessage(),
-                     'inserted' => $countInserted,
-                     'skipped' => $countSkipped
-                 ], 500);
+                 $countSkipped++;
+                 // Store first 5 errors to display to user
+                 if (count($errors) < 5) {
+                     $errors[] = "Row " . $countProcessed . ": " . $e->getMessage();
+                 }
+                 continue; // Skip this row and move to next
              }
         }
         fclose($handle);
 
-        \Illuminate\Support\Facades\Log::info("CSV Processing Complete. Processed: $countProcessed, Inserted: $countInserted, Skipped: $countSkipped");
-        
+        $message = "Upload Processed. Inserted: $countInserted, Failed: $countSkipped.";
+        if (!empty($errors)) {
+            $message .= " First Error: " . $errors[0];
+        }
+
         return response()->json([
-            'message' => "Bulk upload processed successfully.",
+            'message' => $message,
             'inserted' => $countInserted,
-            'skipped' => $countSkipped
+            'skipped' => $countSkipped,
+            'errors' => $errors
         ], 200);
     });
 
