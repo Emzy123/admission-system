@@ -73,7 +73,12 @@
                                 const percent = Math.round((event.loaded / event.total) * 100);
                                 progressBar.style.width = percent + '%';
                                 progressBar.innerText = percent + '%';
-                                progressText.innerText = 'Uploading... ' + percent + '%';
+                                if (percent < 100) {
+                                    progressText.innerText = 'Uploading... ' + percent + '%';
+                                } else {
+                                    progressText.innerHTML = '<span class="text-primary"><i class="fas fa-spinner fa-spin me-2"></i> Server processing data... This may take a moment.</span>';
+                                    progressBar.classList.add('progress-bar-striped', 'progress-bar-animated');
+                                }
                             }
                         };
 

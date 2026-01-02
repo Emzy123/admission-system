@@ -3,7 +3,12 @@
 @section('content')
 <div class="row mb-4">
     <div class="col-md-12">
-        <h2>Admissions Reports</h2>
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Admissions Reports</h2>
+            <a href="{{ url('/reports/download-admitted') }}" class="btn btn-outline-primary">
+                <i class="fas fa-download me-2"></i> Download Admitted List (CSV)
+            </a>
+        </div>
         <div class="alert alert-light border shadow-sm mt-3">
              <i class="fas fa-chart-line me-2"></i>
              Visual insights into the admission process.

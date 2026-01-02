@@ -112,6 +112,19 @@ class AdmissionController extends Controller
                  $reason = "jamb score did not meet criteria"; // Exact wording requested
             }
 
+            if ($status === 'admitted') {
+                \App\Models\AdmittedCandidate::firstOrCreate(
+                    ['jamb_reg_no' => $applicant->jamb_reg_no],
+                    [
+                        'full_name' => $applicant->full_name,
+                        'course_admitted' => $applicant->course_applied,
+                        'gender' => $applicant->gender,
+                        'state_of_origin' => $applicant->state_of_origin,
+                        'jamb_score' => $applicant->jamb_score
+                    ]
+                );
+            }
+
             $applicant->update([
                 'status' => $status,
                 'reason' => $reason
@@ -121,7 +134,6 @@ class AdmissionController extends Controller
             $processed++;
         }
         
-        // Remove duplicate loop finisher (bug fix)
         return response()->json([
             'message' => "Standardized Admission Process Complete.",
             'processed' => $processed,
@@ -134,8 +146,21 @@ class AdmissionController extends Controller
         $applicant = Applicant::findOrFail($id);
         $applicant->update([
             'status' => 'admitted',
-            'created_at' => now(), // Refresh timestamp to show at top? Optional.
+            'reason' => 'Met all requirements within quota.',
+            'created_at' => now(), 
         ]);
+        
+        \App\Models\AdmittedCandidate::firstOrCreate(
+            ['jamb_reg_no' => $applicant->jamb_reg_no],
+            [
+                'full_name' => $applicant->full_name,
+                'course_admitted' => $applicant->course_applied,
+                'gender' => $applicant->gender,
+                'state_of_origin' => $applicant->state_of_origin,
+                'jamb_score' => $applicant->jamb_score
+            ]
+        );
+
         $applicant->notify(new \App\Notifications\AdmissionDecision('admitted', "Congratulations! Your admission has been manually approved by the administration."));
         
         return back()->with('success', "Applicant {$applicant->full_name} has been manually Admitted.");

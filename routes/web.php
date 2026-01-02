@@ -200,7 +200,8 @@ Route::middleware('auth')->group(function () {
 
     // JAMB Confirmation (Admin)
     Route::get('/jamb/confirmation', function () {
-        return view('jamb.confirmation');
+        $admitted = \App\Models\AdmittedCandidate::orderBy('admitted_at', 'desc')->get();
+        return view('jamb.confirmation', compact('admitted'));
     });
 
     // Reports (Admin)
@@ -218,6 +219,38 @@ Route::middleware('auth')->group(function () {
         $deptData = $intakeByDept->pluck('total');
 
         return view('reports.index', compact('admittedCount', 'rejectedCount', 'deptLabels', 'deptData'));
+    });
+
+    Route::get('/reports/download-admitted', function () {
+        $candidates = \App\Models\AdmittedCandidate::all();
+        $csvFileName = 'admitted_candidates_' . date('Y-m-d') . '.csv';
+        $headers = [
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=$csvFileName",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $callback = function() use($candidates) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['JAMB Reg No', 'Full Name', 'Course Admitted', 'Gender', 'State', 'JAMB Score', 'Admitted At']);
+            
+            foreach ($candidates as $row) {
+                fputcsv($file, [
+                    $row->jamb_reg_no,
+                    $row->full_name,
+                    $row->course_admitted,
+                    $row->gender,
+                    $row->state_of_origin,
+                    $row->jamb_score,
+                    $row->admitted_at
+                ]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     });
     
     Route::get('/applicants', function () {

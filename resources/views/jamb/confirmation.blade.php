@@ -18,53 +18,42 @@
                 <h5 class="mb-0"><i class="fas fa-cloud-upload-alt me-2"></i> Submit Admission List to JAMB</h5>
             </div>
             <div class="card-body text-center py-5">
-                <h4 class="mb-4">Ready to submit <strong>3</strong> admitted candidates?</h4>
+                <h4 class="mb-4">Ready to submit <strong>{{ $admitted->count() }}</strong> admitted candidates?</h4>
                 
-                <button class="btn btn-primary btn-lg px-5" data-bs-toggle="collapse" data-bs-target="#apiPreview">
-                    <i class="fas fa-paper-plane me-2"></i> Send Admission List to JAMB
-                </button>
-
-                <!-- Simulated API Request Preview -->
-                <div class="collapse mt-4 text-start" id="apiPreview">
-                    <div class="card bg-dark text-white border-0">
-                        <div class="card-header bg-secondary border-0">
-                            <small>API Request Preview (Simulated)</small>
-                        </div>
-                        <div class="card-body">
-                            <pre class="mb-0 text-success">
-POST /api/v1/admissions/upload HTTP/1.1
-Host: caps.jamb.gov.ng
-Authorization: Bearer ********************
-Content-Type: application/json
-
-{
-    "session": "2024/2025",
-    "institution_code": "00123",
-    "candidates": [
-        {
-            "jamb_reg": "20249823AB",
-            "course_code": "CSC101",
-            "score": 285
-        },
-        {
-            "jamb_reg": "20241234CD",
-            "course_code": "MED202",
-            "score": 310
-        },
-        ...
-    ]
-}
-                            </pre>
-                        </div>
-                        <div class="card-footer bg-secondary border-0 text-center">
-                             <div class="spinner-grow spinner-grow-sm text-light" role="status"></div>
-                             Sending data... (Simulated)
-                        </div>
-                    </div>
-                     <div class="alert alert-success mt-3">
-                        <i class="fas fa-check-double me-2"></i> <strong>Success:</strong> Data successfully synchronized with JAMB CAPS.
+                <div class="text-start mb-4">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Reg No</th>
+                                    <th>Name</th>
+                                    <th>Course</th>
+                                    <th>Score</th>
+                                    <th>Date Admitted</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($admitted as $student)
+                                <tr>
+                                    <td>{{ $student->jamb_reg_no }}</td>
+                                    <td>{{ $student->full_name }}</td>
+                                    <td>{{ $student->course_admitted }}</td>
+                                    <td>{{ $student->jamb_score }}</td>
+                                    <td>{{ $student->created_at->format('d M Y') }}</td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">No admitted candidates yet.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+
+                <button class="btn btn-primary btn-lg px-5" onclick="alert('Module connected to JAMB CAPS API. (Simulation)')">
+                    <i class="fas fa-paper-plane me-2"></i> Submit List to JAMB
+                </button>
             </div>
         </div>
     </div>
