@@ -124,28 +124,39 @@ Route::middleware('auth')->group(function () {
                  }
              }
             
-             // Create/Update Applicant
-             Applicant::updateOrCreate(
-                ['jamb_reg_no' => $row[0]], 
-                [
-                    'full_name' => $row[1],
-                    'gender' => $row[2] ?? null,
-                    'state_of_origin' => $row[3],
-                    'lga' => $row[4] ?? null,
-                    'jamb_score' => intval($row[5]), // Score is Col 5
-                    'jamb_details' => $jambDetails,
-                    'course_applied' => $row[14],
-                    'email' => !empty($row[17]) ? $row[17] : strtolower(str_replace(' ', '.', $row[1])) . '@example.com', // Fallback details
-                    'phone_number' => $row[18] ?? null,
-                    'olevel' => $olevel,
-                    
-                    'status' => 'pending',
-                    'is_submitted' => true,
-                    'password' => \Illuminate\Support\Facades\Hash::make('password'),
-                    'aggregate' => 0
-                ]
-             );
-             $countInserted++;
+             // Determine Email (Fallback if missing)
+             $email = !empty($row[17]) ? $row[17] : strtolower(str_replace(' ', '.', $row[1])) . '_' . substr($row[0], -4) . '@example.com';
+
+             try {
+                 // Create/Update Applicant
+                 Applicant::updateOrCreate(
+                    ['jamb_reg_no' => $row[0]], 
+                    [
+                        'full_name' => $row[1],
+                        'gender' => $row[2] ?? null,
+                        'state_of_origin' => $row[3],
+                        'lga' => $row[4] ?? null,
+                        'jamb_score' => intval($row[5]), // Score is Col 5
+                        'jamb_details' => $jambDetails,
+                        'course_applied' => $row[14],
+                        'email' => $email,
+                        'phone_number' => $row[18] ?? null,
+                        'olevel' => $olevel,
+                        
+                        'status' => 'pending',
+                        'is_submitted' => true,
+                        'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                        'aggregate' => 0
+                    ]
+                 );
+                 $countInserted++;
+             } catch (\Exception $e) {
+                 return response()->json([
+                     'message' => "Error on Row " . ($index+1) . ": " . $e->getMessage(),
+                     'inserted' => $countInserted,
+                     'skipped' => $countSkipped
+                 ], 500);
+             }
         }
         fclose($handle);
 
