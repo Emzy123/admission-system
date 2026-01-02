@@ -152,7 +152,7 @@ Route::middleware('auth')->group(function () {
                  $countInserted++;
              } catch (\Exception $e) {
                  return response()->json([
-                     'message' => "Error on Row " . ($index+1) . ": " . $e->getMessage(),
+                     'message' => "Error on Row " . $countProcessed . ": " . $e->getMessage(),
                      'inserted' => $countInserted,
                      'skipped' => $countSkipped
                  ], 500);
