@@ -164,6 +164,10 @@
         @yield('content')
     </div>
 
+    <div class="text-center text-muted small py-3">
+        v1.2 (Holistic Review Enabled) | &copy; {{ date('Y') }}
+    </div>
+
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Chart.js -->
