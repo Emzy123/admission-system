@@ -264,6 +264,14 @@ Route::get('/system/fix-admin', function () {
         );
         return "Admin User Fixed!<br>Email: emmanuelocheme86@gmail.com<br>Password: Admin@universityportal<br><br><a href='/admin/login'>Login Now</a>";
     } catch (\Exception $e) {
-        return "Error fixing admin: " . $e->getMessage();
     }
+});
+
+Route::get('/system/debug-schema', function () {
+    $columns = \Illuminate\Support\Facades\Schema::getColumnListing('applicants');
+    $migrations = \Illuminate\Support\Facades\DB::table('migrations')->get();
+    return response()->json([
+        'columns' => $columns,
+        'migrations' => $migrations
+    ]);
 });
