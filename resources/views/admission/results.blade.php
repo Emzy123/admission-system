@@ -89,7 +89,7 @@
                                 <td>{{ $r->full_name }}</td>
                                 <td>{{ $r->course_applied }}</td>
                                 <td>{{ $r->jamb_score }}</td>
-                                <td><span class="text-danger fw-bold">Below Criteria</span></td>
+                                <td><span class="text-danger fw-bold">{{ $r->reason ?? 'Did not meet criteria' }}</span></td>
                             </tr>
                             @empty
                             <tr>
