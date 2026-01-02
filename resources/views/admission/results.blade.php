@@ -127,7 +127,7 @@
                                     @else
                                         <span class="badge bg-danger"><i class="fas fa-flag me-1"></i> Flagged</span>
                                     @endif
-                                    <div class="small mt-1 text-muted">{{ Str::limit($rv->comments ?? 'System Decision', 50) }}</div>
+                                    <div class="small mt-1 text-dark fw-bold">{{ Str::limit($rv->reason ?? 'System Decision', 100) }}</div>
                                 </td>
                                 <td>
                                     <div><strong>JAMB:</strong> {{ $rv->jamb_score }}</div>

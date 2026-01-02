@@ -25,6 +25,8 @@ Route::middleware('auth')->group(function () {
             'total_applicants' => Applicant::count(),
             'eligible' => Applicant::where('status', 'pending')->where('is_submitted', true)->count(),
             'admitted' => Applicant::where('status', 'admitted')->count(),
+            'waitlisted' => Applicant::where('status', 'waitlisted')->count(),
+            'under_review' => Applicant::where('status', 'under_review')->count(),
             'rejected' => Applicant::where('status', 'rejected')->count()
         ];
         return view('dashboard', compact('metrics'));

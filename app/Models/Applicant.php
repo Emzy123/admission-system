@@ -13,7 +13,7 @@ class Applicant extends Authenticatable
     protected $fillable = [
         'full_name', 'email', 'password', 'jamb_reg_no', 'jamb_score', 
         'olevel', 'state_of_origin', 'course_applied', 'aggregate', 
-        'status', 'is_submitted',
+        'status', 'reason', 'is_submitted',
         'has_disciplinary_record', 'academic_trend', 
         'recommendation_score', 'hardship_bonus'
     ];

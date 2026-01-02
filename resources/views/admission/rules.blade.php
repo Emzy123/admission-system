@@ -60,6 +60,50 @@
     </div>
 </div>
 
+<!-- Holistic Review Rules -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Holistic Review Criteria (New)</h5>
+    </div>
+    <div class="card-body">
+        <p>In addition to academic scores, the system now evaluates candidates based on the following holistic factors:</p>
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Factor</th>
+                        <th>Condition</th>
+                        <th>Impact on Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="fw-bold">Academic Trend</td>
+                        <td>Consistent Improvement (Upward Trend)</td>
+                        <td><span class="badge bg-success">+2 Points</span></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Recommendation</td>
+                        <td>Strong Letter of Support (> 7/10)</td>
+                        <td><span class="badge bg-success">+2 Points</span></td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Institutional Priority</td>
+                        <td>Catchment State Origin</td>
+                        <td><span class="badge bg-success">+5 Points</span></td>
+                    </tr>
+                     <tr>
+                        <td class="fw-bold text-danger">Disciplinary Record</td>
+                        <td>Any record of misconduct</td>
+                        <td><span class="badge bg-danger">Flagged for Review</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+
 <div class="row mt-4">
     <div class="col-md-6">
         <div class="card shadow-sm">

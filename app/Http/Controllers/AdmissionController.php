@@ -56,6 +56,7 @@ class AdmissionController extends Controller
             // 3. Admission Decision with Waitlist Logic
             $status = 'rejected';
             $message = "Admission Declined. Adjusted Score: " . number_format($finalScore, 1);
+            $reason = "Score ($finalScore) below cutoff ($cutoff)"; // Default reason
             $missingReq = []; // Initialize array
 
             // 2c. Check Required Subjects (Subject Verification)
@@ -84,8 +85,9 @@ class AdmissionController extends Controller
 
             // Check Discipline FIRST (Safety)
             if ($applicant->has_disciplinary_record) {
-                $status = 'under_review'; // Flag for manual review
+                $status = 'under_review'; 
                 $message = "Application flagged for Disciplinary Review. Action Required.";
+                $reason = "Flagged: Disciplinary Record Detected.";
             } 
             elseif (empty($missingReq) && $applicant->jamb_score >= $cutoff) {
                 // Check Quota
@@ -96,16 +98,24 @@ class AdmissionController extends Controller
                 if ($admittedCount < ($course->quota ?? 100)) {
                     $status = 'admitted';
                     $message = "Congratulations! Provisional Admission Offered (Score: $finalScore).";
+                    $reason = "Met all requirements within quota.";
                 } else {
                      // Waitlist Logic
                     $status = 'waitlisted'; 
                     $message = "Qualified but Quota Full. You have been placed on the Waitlist.";
+                    $reason = "Qualified (Score: $finalScore) but Course Quota Full.";
                 }
             } elseif (!empty($missingReq)) {
                  $message = "Declined. Missing Credits: " . implode(', ', $missingReq);
+                 $reason = "Missing Required Subjects: " . implode(', ', $missingReq);
+            } elseif ($applicant->jamb_score < $cutoff) {
+                 $reason = "JAMB Score ($applicant->jamb_score) below departmental cutoff ($cutoff).";
             }
 
-            $applicant->update(['status' => $status]);
+            $applicant->update([
+                'status' => $status,
+                'reason' => $reason
+            ]);
             $applicant->notify(new \App\Notifications\AdmissionDecision($status, $message));
 
             $processed++;
