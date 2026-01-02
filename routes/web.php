@@ -89,54 +89,60 @@ Route::middleware('auth')->group(function () {
         $countSkipped = 0;
         $countInserted = 0;
 
+        // Skip Header explicitly if not empty
+        // fgetcsv($handle); // Optional: we can check row content inside loop
+
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
              $countProcessed++;
-             // Log first 3 rows to debug structure
-             if ($countProcessed <= 3) {
-                 \Illuminate\Support\Facades\Log::info("Row {$countProcessed}: " . json_encode($row));
-             }
+             
+             // 1. Basic Validation: Skip empty rows or Header
+             if (empty($row[0])) continue;
+             if ($row[0] === 'Registration Number') continue; // Skip Header row if found
 
-             // Expecting: RegNo, Name, Email, Score, Course, State, Sub1, Gr1, Sub2, Gr2, Sub3, Gr3, Sub4, Gr4, Sub5, Gr5
-             // Minimum 6 columns required, but 16 recommended for full O-Level
-             if(count($row) < 6) {
-                 \Illuminate\Support\Facades\Log::warning("Skipped Row {$countProcessed}: Not enough columns (" . count($row) . ")");
-                 $countSkipped++;
-                 continue;
-             }
+             // Map Columns (Official JAMB 29 Cols)
+             // 0:RegNo, 1:Name, 2:Gender, 3:State, 4:LGA, 5:UTME Score
+             // 6:Sub1, 7:Scr1, 8:Sub2, 9:Scr2, 10:Sub3, 11:Scr3, 12:Sub4, 13:Scr4
+             // 14:Course, 15:Inst, 16:Status, 17:Email, 18:Phone
+             // 19:O-Sub1, 20:O-Grd1 ... 27:O-Sub5, 28:O-Grd5
 
-             $score = is_numeric($row[3]) ? intval($row[3]) : 0;
-             if ($score === 0) {
-                 \Illuminate\Support\Facades\Log::warning("Skipped Row {$countProcessed}: Invalid Score '{$row[3]}'");
-                 $countSkipped++;
-                 continue;
-             }
-
-             // Parse O-Levels from columns 6-15 if they exist
-             $olevel = [];
-             // Pairs start at index 6: 6=>Sub1, 7=>Gr1, 8=>Sub2, 9=>Gr2 ... 14=>Sub5, 15=>Gr5
-             for ($i = 6; $i < 16; $i += 2) {
-                 if (isset($row[$i]) && isset($row[$i+1])) {
-                     $sub = trim($row[$i]);
-                     $gr = trim($row[$i+1]);
-                     if (!empty($sub) && !empty($gr)) {
-                         $olevel[$sub] = $gr;
-                     }
+             // Build JAMB Details
+             $jambDetails = [];
+             for ($i = 6; $i <= 12; $i += 2) {
+                 if (!empty($row[$i])) {
+                     $jambDetails[] = [
+                         'subject' => $row[$i],
+                         'score' => intval($row[$i+1] ?? 0)
+                     ];
                  }
              }
 
+             // Build O-Level Array
+             $olevel = [];
+             for ($i = 19; $i <= 27; $i += 2) {
+                 if (!empty($row[$i]) && !empty($row[$i+1])) {
+                     $olevel[strtolower(trim($row[$i]))] = strtoupper(trim($row[$i+1]));
+                 }
+             }
+            
+             // Create/Update Applicant
              Applicant::updateOrCreate(
-                ['jamb_reg_no' => $row[0]], // Lookup by Unique RegNo instead of Email
+                ['jamb_reg_no' => $row[0]], 
                 [
-                    'email' => $row[2], 
                     'full_name' => $row[1],
-                    'password' => \Illuminate\Support\Facades\Hash::make('password'),
-                    'jamb_score' => $score,
-                    'course_applied' => $row[4],
-                    'state_of_origin' => $row[5],
+                    'gender' => $row[2] ?? null,
+                    'state_of_origin' => $row[3],
+                    'lga' => $row[4] ?? null,
+                    'jamb_score' => intval($row[5]), // Score is Col 5
+                    'jamb_details' => $jambDetails,
+                    'course_applied' => $row[14],
+                    'email' => !empty($row[17]) ? $row[17] : strtolower(str_replace(' ', '.', $row[1])) . '@example.com', // Fallback details
+                    'phone_number' => $row[18] ?? null,
+                    'olevel' => $olevel,
+                    
                     'status' => 'pending',
                     'is_submitted' => true,
-                    'olevel' => $olevel,
-                    'aggregate' => 0 // Calculated later
+                    'password' => \Illuminate\Support\Facades\Hash::make('password'),
+                    'aggregate' => 0
                 ]
              );
              $countInserted++;
