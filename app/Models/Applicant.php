@@ -13,13 +13,16 @@ class Applicant extends Authenticatable
     protected $fillable = [
         'full_name', 'email', 'password', 'jamb_reg_no', 'jamb_score', 
         'olevel', 'state_of_origin', 'course_applied', 'aggregate', 
+        'olevel', 'state_of_origin', 'course_applied', 'aggregate', 
         'status', 'reason', 'is_submitted',
         'has_disciplinary_record', 'academic_trend', 
-        'recommendation_score', 'hardship_bonus'
+        'recommendation_score', 'hardship_bonus',
+        'gender', 'lga', 'phone_number', 'jamb_details'
     ];
 
     protected $casts = [
         'olevel' => 'array',
+        'jamb_details' => 'array',
         'password' => 'hashed',
         'is_submitted' => 'boolean'
     ];

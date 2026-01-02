@@ -24,7 +24,10 @@
                     <div class="mb-3">
                         <label class="form-label">Select CSV File</label>
                         <input type="file" name="csv_file" id="csvFile" class="form-control" required accept=".csv,.xlsx">
-                        <div class="form-text">Supported formats: .csv, .xlsx</div>
+                        <div class="form-text">
+                            <strong>Format:</strong> Official JAMB Export (29 Columns).<br>
+                            <em>(RegNo, Name, Gender, State, LGA, Score, Subjects...)</em>
+                        </div>
                     </div>
                     
                     <!-- Progress Bar Container (Hidden by default) -->

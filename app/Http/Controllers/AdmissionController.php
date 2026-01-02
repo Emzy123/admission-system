@@ -107,9 +107,9 @@ class AdmissionController extends Controller
                 }
             } elseif (!empty($missingReq)) {
                  $message = "Declined. Missing Credits: " . implode(', ', $missingReq);
-                 $reason = "Missing Required Subjects: " . implode(', ', $missingReq);
+                 $reason = "O-Level verification: missing credit in " . implode(', ', $missingReq);
             } elseif ($applicant->jamb_score < $cutoff) {
-                 $reason = "JAMB Score ($applicant->jamb_score) below departmental cutoff ($cutoff).";
+                 $reason = "jamb score did not meet criteria"; // Exact wording requested
             }
 
             $applicant->update([
